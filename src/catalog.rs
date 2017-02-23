@@ -458,7 +458,7 @@ pub mod hammer_s17_hw0 {
     (x:X, nm:Name, xs: Art<List<X>>, f:Rc<F>) -> List<Y> 
     where F:Fn(X) -> bool 
   { 
-    match f(x) {
+    match f(x.clone()) {
         false => list_filter(force(&xs),f),
         true => {
             let (nm1, nm2) = name_fork(nm);
@@ -492,7 +492,7 @@ pub mod hammer_s17_hw0 {
   { 
     let (nm1, nm2) = name_fork(nm);
     let (a,b) = list_split(force(&xs), f);   
-    match f(x) {
+    match f(x.clone()) {
         false => (List::Cons(x, nm1, cell(nm2, a)),b),
         true => (a,List::Cons(x, nm1, cell(nm2, b)))
     }
