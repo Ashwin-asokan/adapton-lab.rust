@@ -643,23 +643,115 @@ pub mod hammer_s17_hw1 {
     (inp: List<X>, f:Rc<F>) -> List<X> 
     where F:Fn(X) -> bool
   {
-    panic!("TODO")
+    match inp {
+        List::Nil => List::Nil,
+	List::Cons(x, xc) => list_filter_cons(x,xc,f),
+        List::Name(nm,xn) => memo!(nm.clone() =>> list_filter_name =>> <X,F>,
+                  nm:nm, xn:xn
+                  ;;
+                  f:f),
+        List::Art(xa) => list_filter(force(&xa),f)
+    }
   }
 
+  pub fn list_filter_cons<X:Eq+Clone+Hash+Debug+'static,
+                       F:'static>
+    (x:X, xc: Box<List<X>>, f:Rc<F>) -> List<X> 
+    where F:Fn(X) -> bool 
+  { 
+    match f(x.clone()) {
+        false => list_filter(*xc,f),
+        true => {
+            let rest = list_filter(*xc, f);
+            List::Cons(x, Box::new(rest))
+        }
+    }
+  }
+
+  pub fn list_filter_name<X:Eq+Clone+Hash+Debug+'static,
+                       F:'static>
+    (nm:Name, xn: Box<List<X>>, f:Rc<F>) -> List<X> 
+    where F:Fn(X) -> bool 
+  { 
+	let (nm1, nm2) = name_fork(nm);
+	let rest = list_filter(*xn, f);
+	List::Name(nm1, Box::new(List::Art(cell(nm2,rest))))
+  }
   /// List split:
   pub fn list_split<X:Eq+Clone+Hash+Debug+'static,
                     F:'static>
     (inp: List<X>, f:Rc<F>) -> (List<X>, List<X>)
     where F:Fn(X) -> bool
   {
-    panic!("TODO")
+    match inp {
+      List::Nil => (List::Nil,List::Nil),
+      List::Cons(x,xc) => list_split_cons(x,xc,f),
+      List::Name(nm,xn) => memo!(nm.clone() =>> list_split_name =>> <X,F>, 
+              nm:nm, xn:xn 
+              ;; 
+              f:f),
+      List::Art(xa) => list_split(force(&xa),f)
+    }
+  }
+
+  pub fn list_split_cons<X:Eq+Clone+Hash+Debug+'static,
+                       F:'static>
+    (x:X, xc: Box<List<X>>, f:Rc<F>) -> (List<X>,List<X>) 
+    where F:Fn(X) -> bool 
+  { 
+    let (a,b) = list_split(*xc, f.clone());   
+    match f(x.clone()) {
+        false => (List::Cons(x, Box::new(a)),b),
+        true => (a,List::Cons(x, Box::new(b)))
+    }
+  }
+
+  pub fn list_split_name<X:Eq+Clone+Hash+Debug+'static,
+                       F:'static>
+    (nm:Name, xn: Box<List<X>>, f:Rc<F>) -> (List<X>,List<X>) 
+    where F:Fn(X) -> bool 
+  { 
+    let (nm1, nm2) = name_fork(nm);
+    let (nm3,nm4) = name_fork(nm1);
+    let (nm5,nm6) = name_fork(nm2);
+    let (a,b) = list_split(*xn, f);
+    (List::Name(nm3, Box::new(List::Art(cell(nm4,a)))),List::Name(nm5, Box::new(List::Art(cell(nm6,b)))))
   }
 
   /// List reverse:
   pub fn list_reverse<X:Eq+Clone+Hash+Debug+'static>
     (inp: List<X>) -> List<X>
   {
-    panic!("TODO")
+    list_reverse_helper(inp,List::Nil)
+  }
+
+  pub fn list_reverse_helper<X:Eq+Clone+Hash+Debug+'static>
+    (inp: List<X>, reversed: List<X>) -> List<X>
+  {
+    match inp {
+        List::Nil => reversed,
+	List::Cons(x, xc) => list_reverse_cons(x,xc,reversed),
+        List::Name(nm, xn) => {
+            memo!(nm.clone() =>> list_reverse_name :: <X>, 
+               nm:nm, xn:xn, reversed:reversed)
+            },
+	List::Art(xa) => list_reverse_helper(force(&xa),reversed)
+    } 
+  }
+
+  pub fn list_reverse_cons<X:Eq+Clone+Hash+Debug+'static>
+    (x:X, xc: Box<List<X>>, reversed:List<X>) -> List<X> 
+  { 
+    let r = List::Cons(x, Box::new(reversed));
+    list_reverse_helper(*xc,r)
+  }
+
+  pub fn list_reverse_name<X:Eq+Clone+Hash+Debug+'static>
+    (nm:Name, xn: Box<List<X>>, reversed:List<X>) -> List<X> 
+  { 
+    let (nm1, nm2) = name_fork(nm);
+    let r = List::Name(nm1, Box::new(List::Art(cell(nm2, reversed))));
+    list_reverse_helper(*xn,r)
   }
 
   /// List join:
@@ -718,6 +810,7 @@ pub mod hammer_s17_hw1 {
       panic!("TODO: Hammer (2017-03-01)")
     }
   }
+
   impl Edit<List<usize>,usize> for Editor {
     fn edit_init<R:Rng>(_rng:&mut R, _params:&GenerateParams) -> usize { 
       return 0
@@ -1381,6 +1474,5 @@ pub fn all_labs() -> Vec<Box<Lab>> {
     //         hammer_s17_hw1::LLEditor,
     //         hammer_s17_hw1::RunJoin)
     //   ,
-
-  ]
+    ]
 }
