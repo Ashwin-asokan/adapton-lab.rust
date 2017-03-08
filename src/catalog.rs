@@ -758,7 +758,61 @@ pub mod hammer_s17_hw1 {
   pub fn list_join<X:Eq+Clone+Hash+Debug+'static>
     (inp: List<List<X>>) -> List<X>
   {
-    panic!("TODO")
+    list_join_helper(inp,List::Nil)
+  }
+
+  pub fn list_join_helper<X:Eq+Clone+Hash+Debug+'static>
+    (inp: List<List<X>>, joined:List<X>) -> List<X>
+  {
+    match inp {
+        List::Nil => joined,
+	List::Cons(x, xc) => list_join_cons(x,xc,joined),
+        List::Name(nm,xn) => memo!(nm.clone() =>> list_join_name :: <X>,
+                  nm:nm, xn:xn,joined:joined),
+        List::Art(xa) => list_join_helper(force(&xa),joined)
+    }
+  }
+
+  pub fn list_join_cons<X:Eq+Clone+Hash+Debug+'static>
+    (x:List<X>, xc: Box<List<List<X>>>, joined: List<X>) -> List<X> 
+  {
+	let x_joined = list_accumulate(x,joined);
+	list_join_helper(*xc,x_joined)
+  }
+
+  pub fn list_join_name<X:Eq+Clone+Hash+Debug+'static>
+    (nm:Name, xn: Box<List<List<X>>>, joined: List<X>) -> List<X> 
+  { 
+	let (nm1, nm2) = name_fork(nm);
+	let r = List::Name(nm1, Box::new(List::Art(cell(nm2, joined))));
+	list_join_helper(*xn,r)
+  }
+
+  pub fn list_accumulate<X:Eq+Clone+Hash+Debug+'static>
+    (inp: List<X>, joined:List<X>) -> List<X>
+  {
+    match inp {
+        List::Nil => joined,
+	List::Cons(x, xc) => list_accumulate_cons(x,xc,joined),
+        List::Name(nm,xn) => memo!(nm.clone() =>> list_accumulate_name :: <X>,
+                  nm:nm, xn:xn,joined:joined),
+        List::Art(xa) => list_accumulate(force(&xa),joined)
+    }
+  }
+
+  pub fn list_accumulate_cons<X:Eq+Clone+Hash+Debug+'static>
+    (x:X, xc: Box<List<X>>, joined: List<X>) -> List<X> 
+  { 
+	let r = List::Cons(x, Box::new(joined));
+    	list_accumulate(*xc,r)
+  }
+
+  pub fn list_accumulate_name<X:Eq+Clone+Hash+Debug+'static>
+    (nm:Name, xn: Box<List<X>>, joined: List<X>) -> List<X> 
+  { 
+	let (nm1, nm2) = name_fork(nm);
+	let r = List::Name(nm1, Box::new(List::Art(cell(nm2, joined))));
+   	list_accumulate(*xn,r)
   }
 
   /// List singletons:
