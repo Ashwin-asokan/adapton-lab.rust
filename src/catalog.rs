@@ -765,9 +765,30 @@ pub mod hammer_s17_hw1 {
   pub fn list_singletons<X:Eq+Clone+Hash+Debug+'static>
     (inp: List<X>) -> List<List<X>>
   {
-    panic!("TODO")
+    match inp {
+        List::Nil => List::Nil,
+	List::Cons(x, xc) => list_singletons_cons(x,xc),
+        List::Name(nm,xn) => memo!(nm.clone() =>> list_singletons_name :: <X>,
+                  nm:nm, xn:xn),
+        List::Art(xa) => list_singletons(force(&xa))
+    }
   }
 
+  pub fn list_singletons_cons<X:Eq+Clone+Hash+Debug+'static>
+    (x:X, xc: Box<List<X>>) -> List<List<X>> 
+  { 
+	let rest = list_singletons(*xc);
+	let x_list = List::Cons(x,Box::new(List::Nil));
+	List::Cons(x_list, Box::new(rest))
+  }
+
+  pub fn list_singletons_name<X:Eq+Clone+Hash+Debug+'static>
+    (nm:Name, xn: Box<List<X>>) -> List<List<X>> 
+  { 
+	let (nm1, nm2) = name_fork(nm);
+	let rest = list_singletons(*xn);
+	List::Name(nm1, Box::new(List::Art(cell(nm2,rest))))
+  }
 
   #[derive(Clone,Debug)]
   pub struct RunFilter { } 
